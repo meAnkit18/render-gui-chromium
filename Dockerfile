@@ -14,6 +14,10 @@ RUN apt-get update \
       tini \
       xauth \
       fonts-liberation \
+      x11-apps \
+      x11-utils \
+      xdotool \
+      imagemagick \
  && rm -rf /var/lib/apt/lists/*
 
 COPY index.html /usr/share/novnc/index.html
