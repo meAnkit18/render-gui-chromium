@@ -16,6 +16,7 @@ RUN apt-get update \
       fonts-liberation \
  && rm -rf /var/lib/apt/lists/*
 
+COPY index.html /usr/share/novnc/index.html
 COPY start.sh /start.sh
 RUN chmod +x /start.sh
 
