@@ -5,29 +5,45 @@ export DISPLAY=:99
 W=1280
 H=800
 
-# Virtual X display (software framebuffer)
+(
+  while true; do
+    MEM_NOW=$(cat /sys/fs/cgroup/memory.current 2>/dev/null | awk '{printf "%.0fMB", $1/1048576}')
+    MEM_MAX=$(cat /sys/fs/cgroup/memory.max 2>/dev/null | awk '{printf "%.0fMB", $1/1048576}')
+    MEM_FREE=$(free -m 2>/dev/null | awk '/Mem:/{print $4"M"}')
+    DISK_FREE=$(df -h /tmp 2>/dev/null | awk 'NR==2{print $2"/"$4}')
+    CHROMS=$(pgrep -c chromium 2>/dev/null || echo 0)
+    echo "[diag] $(date -u +%H:%M:%S) cgroup ${MEM_NOW}/${MEM_MAX} free ${MEM_FREE} /tmp ${DISK_FREE} chrom_procs ${CHROMS}"
+    sleep 15
+  done
+) &
+
 Xvfb :99 -screen 0 ${W}x${H}x24 -ac -nolisten tcp &
 
-# Wait for Xvfb socket to appear
 for i in $(seq 1 50); do
   [ -e /tmp/.X11-unix/X99 ] && break
   sleep 0.2
 done
 
-# VNC server exposing the virtual display on 5900
 x11vnc -display :99 -forever -shared -nopw -rfbport 5900 \
        -o /tmp/x11vnc.log -noxdamage &
 
-# Graphical Chromium on the virtual display
 chromium \
   --no-sandbox \
   --disable-dev-shm-usage \
   --disable-gpu \
   --no-first-run \
   --no-default-browser-check \
+  --disable-extensions \
+  --disable-component-update \
+  --disable-sync \
+  --disable-translate \
+  --no-pings \
+  --disable-background-networking \
+  --metrics-recording-only \
+  --enable-low-end-device-mode \
+  --renderer-process-limit=2 \
   --window-size=${W},${H} \
   --window-position=0,0 \
   https://example.com &
 
-# noVNC: serve the web client + tunnel VNC over WebSocket on Render's PORT
 exec websockify --web=/usr/share/novnc --heartbeat=30 "${PORT:-8080}" localhost:5900
