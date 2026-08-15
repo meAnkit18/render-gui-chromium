@@ -7,12 +7,19 @@ H=800
 
 (
   while true; do
+    WININFO=$(xwininfo -root -tree 2>/dev/null | grep -iE 'chromium|children' | head -3 | tr -s ' ')
+    PIX=$(import -window root png:- 2>/dev/null | convert - -resize 48x30! -colorspace Gray -format 'mean=%[fx:mean] std=%[fx:standard_deviation]' info: 2>/dev/null)
+    echo "[probe] win=[${WININFO}] pix=[${PIX:-none}]"
+    sleep 20
+  done
+) &
+
+(
+  while true; do
     MEM_NOW=$(cat /sys/fs/cgroup/memory.current 2>/dev/null | awk '{printf "%.0fMB", $1/1048576}')
     MEM_MAX=$(cat /sys/fs/cgroup/memory.max 2>/dev/null | awk '{printf "%.0fMB", $1/1048576}')
-    MEM_FREE=$(free -m 2>/dev/null | awk '/Mem:/{print $4"M"}')
-    DISK_FREE=$(df -h /tmp 2>/dev/null | awk 'NR==2{print $2"/"$4}')
     CHROMS=$(pgrep -c chromium 2>/dev/null || echo 0)
-    echo "[diag] $(date -u +%H:%M:%S) cgroup ${MEM_NOW}/${MEM_MAX} free ${MEM_FREE} /tmp ${DISK_FREE} chrom_procs ${CHROMS}"
+    echo "[diag] $(date -u +%H:%M:%S) cgroup ${MEM_NOW}/${MEM_MAX} chrom_procs ${CHROMS}"
     sleep 15
   done
 ) &
